@@ -25,16 +25,10 @@ to quickly create a Cobra application.`,
 
 	Run: func(cmd *cobra.Command, args []string) {
 
-		/*
-			tp := jira.BasicAuthTransport{
-				Username: "michael.roy.galloway@gmail.com",
-				Password: "ATATT3xFfGF0tFIuvFdOx6wC8oIgEXQxernsPdCEyDVm9Sz93pGRfU7rAbQrgr9Ozo6ifFRtzOKGACzTIiiTO_MOP9uNxyW_CXQR2oIwq8wrB5cF4HQrXmf0gCMb8QXXuMxpDB13_mEwMEDZMWHlAQnEylHOh6Y5jgEYsLFkw9I8O0SyRzJ0KWg=569DC96B",
-			}
-		*/
 
 		tp := jira.BasicAuthTransport{
-			Username: "michael.galloway@hashicorp.com",
-			Password: "ATATT3xFfGF0JGUz2lhYCyhLtQ91q402nO-FTysaWmkkoTN07S78s8ZKebJpAJkfMcI6kVcHb7fs9cf6az6woOjiolU7hxBh8yCGsmyQwb0EJQuHcdtTHU3KmSwsim8P2hOZWr1VqyM38sLDBMnk9cUYIQkhJFXuWZQftkLoOsbrneFGHQDQ8I0=A43E4A37",
+			Username: "",
+			Password: "",
 		}
 
 		//jiraClient, err := jira.NewClient(tp.Client(), "https://nitebritestudio.atlassian.net")

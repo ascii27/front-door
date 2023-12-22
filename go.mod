@@ -1,4 +1,4 @@
-module frontDoor
+module front-door
 
 go 1.19
 

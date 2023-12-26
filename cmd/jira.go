@@ -13,8 +13,6 @@ import (
 	"strings"
 )
 
-var jql = make(map[string]string)
-
 // jiraCmd represents the jira command
 var jiraCmd = &cobra.Command{
 	Use:   "jira",
@@ -28,35 +26,102 @@ to quickly create a Cobra application.`,
 
 	Run: func(cmd *cobra.Command, args []string) {
 
-		projects := viper.GetStringSlice("jira.projects")
-
 		err := viper.ReadInConfig() // Find and read the config file
 		if err != nil {             // Handle errors reading the config file
 			panic(fmt.Errorf("fatal error config file: %w", err))
 		}
 
-		tp := jira.BasicAuthTransport{
-			Username: viper.GetString("jira.username"),
-			Password: viper.GetString("jira.apitoken"),
+		whoSwitch, _ := cmd.PersistentFlags().GetString("who")
+
+		var who = "myIssues"
+
+		switch whoSwitch {
+		case "mine":
+			who = "myIssues"
+		case "team":
+			who = "myTeamCurrentSprint"
+		default:
+			who = "myIssues"
 		}
 
-		jiraClient, err := jira.NewClient(tp.Client(), viper.GetString("jira.host"))
-		if err != nil {
-			panic(err)
-		}
+		jiraClient := connectToJira()
 
-		query := fmt.Sprintf(jql["myTeamCurrentSprint"], strings.Join(projects, ","))
+		query := generateQuery(who, nil)
 
 		issues := new([]jira.Issue)
 		*issues, _, err = jiraClient.Issue.Search(
 			query,
 			nil)
 		if err != nil {
-			panic(err)
+			fmt.Println(err.Error())
+			return
 		}
 
 		t := table.NewWriter()
 		t.SetOutputMirror(os.Stdout)
+
+		printRows(who, t, *issues)
+
+		t.Render()
+	},
+}
+
+func connectToJira() *jira.Client {
+	tp := jira.BasicAuthTransport{
+		Username: viper.GetString("jira.username"),
+		Password: viper.GetString("jira.apitoken"),
+	}
+
+	jiraClient, err := jira.NewClient(tp.Client(), viper.GetString("jira.host"))
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil
+	}
+
+	return jiraClient
+}
+
+func generateQuery(which string, args map[string]string) string {
+
+	var jql = ""
+
+	switch which {
+	case "myIssues":
+		jql = "assignee=currentUser() ORDER BY priority"
+		return jql
+	case "myTeamCurrentSprint":
+
+		projects := viper.GetStringSlice("jira.projects")
+
+		jql = "project in (%s) AND Sprint in openSprints() AND Sprint not in futureSprints() ORDER BY project, status, created DESC"
+		return fmt.Sprintf(jql, strings.Join(projects, ","))
+	}
+
+	return ""
+}
+
+func printRows(which string, t table.Writer, issues []jira.Issue) {
+	switch which {
+	case "myIssues":
+
+		t.AppendHeader(table.Row{"Key", "Priority", "Summary"})
+		t.SetColumnConfigs([]table.ColumnConfig{
+			{
+				Name:     "Summary",
+				WidthMax: 120,
+			},
+		})
+
+		for _, issue := range issues {
+
+			t.AppendRows([]table.Row{{
+				issue.Key,
+				issue.Fields.Priority.Name,
+				issue.Fields.Summary}})
+		}
+
+	case "myTeamCurrentSprint":
+
 		t.AppendHeader(table.Row{"Key", "Assignee", "Priority", "Status", "Summary"})
 		t.SetColumnConfigs([]table.ColumnConfig{
 			{
@@ -67,7 +132,7 @@ to quickly create a Cobra application.`,
 
 		currentProject := ""
 
-		for _, issue := range *issues {
+		for _, issue := range issues {
 
 			assignee := "Unassigned"
 			if issue.Fields.Assignee != nil {
@@ -90,16 +155,14 @@ to quickly create a Cobra application.`,
 				issue.Fields.Priority.Name,
 				issue.Fields.Summary}})
 		}
-		t.Render()
-	},
+	}
 }
 
 func init() {
 
-	jql["myIssues"] = "assignee=currentUser() ORDER BY priority"
-	jql["myTeamCurrentSprint"] = "project in (%s) AND Sprint in openSprints() AND Sprint not in futureSprints() ORDER BY project, status, created DESC"
-
 	listCmd.AddCommand(jiraCmd)
+
+	jiraCmd.PersistentFlags().String("who", "", "Who's tickets to list. Valid options \"mine\", \"team\". Default: \"mine\"")
 
 	// Here you will define your flags and configuration settings.
 

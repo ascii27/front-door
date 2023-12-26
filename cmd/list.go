@@ -4,9 +4,11 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"fmt"
 	jira "github.com/andygrunwald/go-jira"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"os"
 )
 
@@ -25,14 +27,17 @@ to quickly create a Cobra application.`,
 
 	Run: func(cmd *cobra.Command, args []string) {
 
-
-		tp := jira.BasicAuthTransport{
-			Username: "",
-			Password: "",
+		err := viper.ReadInConfig() // Find and read the config file
+		if err != nil {             // Handle errors reading the config file
+			panic(fmt.Errorf("fatal error config file: %w", err))
 		}
 
-		//jiraClient, err := jira.NewClient(tp.Client(), "https://nitebritestudio.atlassian.net")
-		jiraClient, err := jira.NewClient(tp.Client(), "https://hashicorp.atlassian.net")
+		tp := jira.BasicAuthTransport{
+			Username: viper.GetString("jira.username"),
+			Password: viper.GetString("jira.apitoken"),
+		}
+
+		jiraClient, err := jira.NewClient(tp.Client(), viper.GetString("jira.host"))
 		if err != nil {
 			panic(err)
 		}
@@ -57,17 +62,6 @@ to quickly create a Cobra application.`,
 			t.AppendRows([]table.Row{{issue.Key, issue.Fields.Priority.Name, issue.Fields.Summary}})
 		}
 		t.Render()
-
-		/*
-			issue, _, err := jiraClient.Issue.Get("PLAT-1372", nil)
-			if err != nil {
-				panic(err)
-			}
-
-			fmt.Printf("%s: %+v\n", issue.Key, issue.Fields.Summary)
-			fmt.Printf("Type: %s\n", issue.Fields.Type.Name)
-			fmt.Printf("Priority: %s\n", issue.Fields.Priority.Name)
-		*/
 	},
 }
 

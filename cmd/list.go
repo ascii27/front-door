@@ -5,11 +5,7 @@ package cmd
 
 import (
 	"fmt"
-	jira "github.com/andygrunwald/go-jira"
-	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"os"
 )
 
 // listCmd represents the list command
@@ -23,45 +19,8 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 
-	// Jira token:
-
 	Run: func(cmd *cobra.Command, args []string) {
-
-		err := viper.ReadInConfig() // Find and read the config file
-		if err != nil {             // Handle errors reading the config file
-			panic(fmt.Errorf("fatal error config file: %w", err))
-		}
-
-		tp := jira.BasicAuthTransport{
-			Username: viper.GetString("jira.username"),
-			Password: viper.GetString("jira.apitoken"),
-		}
-
-		jiraClient, err := jira.NewClient(tp.Client(), viper.GetString("jira.host"))
-		if err != nil {
-			panic(err)
-		}
-
-		issues := new([]jira.Issue)
-		*issues, _, err = jiraClient.Issue.Search("assignee=currentUser() ORDER BY priority", nil)
-		if err != nil {
-			panic(err)
-		}
-
-		t := table.NewWriter()
-		t.SetOutputMirror(os.Stdout)
-		t.AppendHeader(table.Row{"Key", "Priority", "Summary"})
-		t.SetColumnConfigs([]table.ColumnConfig{
-			{
-				Name:     "Summary",
-				WidthMax: 120,
-			},
-		})
-		for _, issue := range *issues {
-
-			t.AppendRows([]table.Row{{issue.Key, issue.Fields.Priority.Name, issue.Fields.Summary}})
-		}
-		t.Render()
+		fmt.Println("Error: must also specify a resource like jira")
 	},
 }
 

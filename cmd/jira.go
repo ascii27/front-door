@@ -13,6 +13,11 @@ import (
 	"strings"
 )
 
+const (
+	QUERY_MINE = iota
+	QUERY_TEAM = iota
+)
+
 // jiraCmd represents the jira command
 var jiraCmd = &cobra.Command{
 	Use:   "jira",
@@ -33,15 +38,15 @@ to quickly create a Cobra application.`,
 
 		whoSwitch, _ := cmd.PersistentFlags().GetString("who")
 
-		var who = "myIssues"
+		var who = QUERY_MINE
 
 		switch whoSwitch {
 		case "mine":
-			who = "myIssues"
+			who = QUERY_MINE
 		case "team":
-			who = "myTeamCurrentSprint"
+			who = QUERY_TEAM
 		default:
-			who = "myIssues"
+			who = QUERY_MINE
 		}
 
 		jiraClient := connectToJira()
@@ -81,15 +86,15 @@ func connectToJira() *jira.Client {
 	return jiraClient
 }
 
-func generateQuery(which string, args map[string]string) string {
+func generateQuery(which int, args map[string]string) string {
 
 	var jql = ""
 
 	switch which {
-	case "myIssues":
+	case QUERY_MINE:
 		jql = "assignee=currentUser() ORDER BY priority"
 		return jql
-	case "myTeamCurrentSprint":
+	case QUERY_TEAM:
 
 		projects := viper.GetStringSlice("jira.projects")
 
@@ -100,9 +105,9 @@ func generateQuery(which string, args map[string]string) string {
 	return ""
 }
 
-func printRows(which string, t table.Writer, issues []jira.Issue) {
+func printRows(which int, t table.Writer, issues []jira.Issue) {
 	switch which {
-	case "myIssues":
+	case QUERY_MINE:
 
 		t.AppendHeader(table.Row{"Key", "Priority", "Summary"})
 		t.SetColumnConfigs([]table.ColumnConfig{
@@ -120,7 +125,7 @@ func printRows(which string, t table.Writer, issues []jira.Issue) {
 				issue.Fields.Summary}})
 		}
 
-	case "myTeamCurrentSprint":
+	case QUERY_TEAM:
 
 		t.AppendHeader(table.Row{"Key", "Assignee", "Priority", "Status", "Summary"})
 		t.SetColumnConfigs([]table.ColumnConfig{
